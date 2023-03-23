@@ -7,9 +7,6 @@ Created on Tue Mar 21 20:49:51 2023
 """
 
 """
-Solution to the one-way tunnel
-"""
-"""
 Voy a realizar una solución del problema en el que se soluciona la inanición, para ello lo que tendremos 
 en cuenta es el número de coches que estan en espera. Cuando hayan esperando x cantidad de coches, los peatones 
 deben dejarlos pasar.
@@ -26,8 +23,8 @@ NCARS = 100
 NPED = 30
 TIME_CARS = 0.5  
 TIME_PED = 5
-TIME_IN_BRIDGE_CARS = 1 
-TIME_IN_BRIDGE_PEDESTRIAN = 10
+TIME_IN_BRIDGE_CARS = (1, 0.5) 
+TIME_IN_BRIDGE_PEDESTRIAN = (30,10)
 
 class Monitor():
     def __init__(self):
@@ -41,6 +38,7 @@ class Monitor():
         self.no_cars_north = Condition (self.mutex)
         self.no_pedestrian = Condition (self.mutex)  
         self.car_waiting = Condition (self.mutex)
+        self.ncar = Value ('i', 0)
     
     def are_no_pedestrian(self): 
         return self.npedestrian.value == 0 
@@ -56,7 +54,7 @@ class Monitor():
     
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1
+        self.ncar.value += 1 
         self.ncar_waiting.value += 1
         self.no_pedestrian.wait_for(self.are_no_pedestrian)
         if direction == 1:  
@@ -100,16 +98,16 @@ class Monitor():
         self.mutex.release()
 
     def __repr__(self) -> str:
-        return f'Monitor: {self.ncar_pedestrian.value}'
+        return f'Coches: {self.ncar.value}, Peatones: {self.npedestrian.value}, Coches_esperando:{self.ncar_waiting.value}'
 
 def delay_car_north() -> None:
-    time.sleep(TIME_IN_BRIDGE_CARS)
-    
+    time.sleep(max(random.normalvariate(1, 0.5),0))
+
 def delay_car_south() -> None:
-    time.sleep(TIME_IN_BRIDGE_CARS)
+    time.sleep(max(random.normalvariate(1, 0.5),0))
 
 def delay_pedestrian() -> None:
-    time.sleep(TIME_IN_BRIDGE_PEDESTRIAN)
+    time.sleep(max(random.normalvariate(30, 10),0))
     
 
 def car(cid: int, direction: int, monitor: Monitor)  -> None:
