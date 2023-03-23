@@ -7,7 +7,7 @@ Created on Thu Mar  9 12:46:38 2023
 """
 
 """
-Solution to the one-way tunnel
+Solución básica del problema del puente. 
 """
 import time
 import random
@@ -19,15 +19,15 @@ NORTH = 0
 
 NCARS = 50
 NPED = 10
-TIME_CARS = 0.5  # a new car enters each 0.5s
-TIME_PED = 5 # a new pedestrian enters each 5s
-TIME_IN_BRIDGE_CARS = 1 # normal 1s, 0.5s
+TIME_CARS = 0.5  
+TIME_PED = 5 
+TIME_IN_BRIDGE_CARS = 1 
 TIME_IN_BRIDGE_PEDESTRIAN =  10
 
 class Monitor():
     def __init__(self):
         self.mutex = Lock()
-        self.patata = Value('i', 0) 
+        self.ncar_pedestrian = Value('i', 0) 
         self.ncar_south = Value('i', 0)
         self.ncar_north = Value ('i', 0)
         self.npedestrian = Value ('i', 0) 
@@ -47,7 +47,7 @@ class Monitor():
     
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
-        self.patata.value += 1
+        self.ncar_pedestrian.value += 1
         if direction == 1:  
             self.no_cars_north.wait_for(self.are_nobody_north) 
             self.no_pedestrian.wait_for(self.are_no_pedestrian)
@@ -60,7 +60,7 @@ class Monitor():
 
     def leaves_car(self, direction: int) -> None:
         self.mutex.acquire() 
-        self.patata.value += 1
+        self.ncar_pedestrian.value += 1
         if direction == 1  : 
             self.ncar_south.value -=1 
             if self.ncar_south.value == 0:#Esperamos a que todos los coches del sur hayan cruzado para notificar a los coches del norte y peatones.
@@ -73,7 +73,7 @@ class Monitor():
 
     def wants_enter_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.patata.value += 1
+        self.ncar_pedestrian.value += 1
         self.no_cars_north.wait_for(self.are_nobody_north)
         self.no_cars_south.wait_for(self.are_nobody_south)
         self.npedestrian.value += 1 
@@ -81,14 +81,14 @@ class Monitor():
 
     def leaves_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.patata.value += 1 
+        self.ncar_pedestrian.value += 1 
         self.npedestrian.value -= 1 
         if self.npedestrian.value == 0 : 
             self.no_pedestrian.notify_all() 
         self.mutex.release()
 
     def __repr__(self) -> str:
-        return f'Monitor: {self.patata.value}'
+        return f'Monitor: {self.ncar_pedestrian.value}'
 
 def delay_car_north() -> None:
     time.sleep(TIME_IN_BRIDGE_CARS)
