@@ -21,8 +21,8 @@ NCARS = 50
 NPED = 10
 TIME_CARS = 0.5  
 TIME_PED = 5 
-TIME_IN_BRIDGE_CARS = 1 
-TIME_IN_BRIDGE_PEDESTRIAN =  10
+TIME_IN_BRIDGE_CARS = (1,0.5) #normal 1s, 0.5s
+TIME_IN_BRIDGE_PEDESTRIAN =(30,10)#normal 30s, 10s
 
 class Monitor():
     def __init__(self):
@@ -47,7 +47,6 @@ class Monitor():
     
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1
         if direction == 1:  
             self.no_cars_north.wait_for(self.are_nobody_north) 
             self.no_pedestrian.wait_for(self.are_no_pedestrian)
@@ -60,7 +59,6 @@ class Monitor():
 
     def leaves_car(self, direction: int) -> None:
         self.mutex.acquire() 
-        self.ncar_pedestrian.value += 1
         if direction == 1  : 
             self.ncar_south.value -=1 
             if self.ncar_south.value == 0:#Esperamos a que todos los coches del sur hayan cruzado para notificar a los coches del norte y peatones.
@@ -73,7 +71,6 @@ class Monitor():
 
     def wants_enter_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1
         self.no_cars_north.wait_for(self.are_nobody_north)
         self.no_cars_south.wait_for(self.are_nobody_south)
         self.npedestrian.value += 1 
@@ -81,25 +78,24 @@ class Monitor():
 
     def leaves_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1 
         self.npedestrian.value -= 1 
         if self.npedestrian.value == 0 : 
             self.no_pedestrian.notify_all() 
         self.mutex.release()
 
     def __repr__(self) -> str:
-        return f'Monitor: {self.ncar_pedestrian.value}'
+        return f'Coches_sur: {self.ncar_south.value}, Coches_norte: {self.ncar_north.value}, Peatones: {self.npedestrian.value}'
 
 def delay_car_north() -> None:
-    time.sleep(TIME_IN_BRIDGE_CARS)
+    time.sleep(max(random.normalvariate(1, 0.5),0))
 
 def delay_car_south() -> None:
-    time.sleep(TIME_IN_BRIDGE_CARS)
+    time.sleep(max(random.normalvariate(1, 0.5),0))
 
 def delay_pedestrian() -> None:
-    time.sleep(TIME_IN_BRIDGE_PEDESTRIAN)
+    time.sleep(max(random.normalvariate(30, 10),0))
 
-#random.normalvariate(1, 0.5),random.normalvariate(30, 10)
+
 def car(cid: int, direction: int, monitor: Monitor)  -> None:
     print(f"car {cid} heading {direction} wants to enter. {monitor}")
     monitor.wants_enter_car(direction)
