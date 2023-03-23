@@ -11,8 +11,8 @@ Solution to the one-way tunnel
 """
 """
 Voy a realizar una solución del problema en el que se soluciona la inanición, para ello lo que tendremos 
-en cuenta es el número de coches y peatones que entran. Cuando hayan sobrepasado un límite impuesto, dejan 
-pasar a los demás.
+en cuenta es el número de coches que estan en espera. Cuando hayan esperando x cantidad de coches, los peatones 
+deben dejarlos pasar.
 """
 import time
 import random
@@ -22,109 +22,85 @@ from multiprocessing import Value
 SOUTH = 1
 NORTH = 0
 
-NCARS = 50
-NPED = 10
-TIME_CARS = 0.5  # a new car enters each 0.5s
-TIME_PED = 2 # a new pedestrian enters each 5s
-TIME_IN_BRIDGE_CARS = 1 #(1, 0.5) # normal 1s, 0.5s
-TIME_IN_BRIDGE_PEDESTRIAN = 3 #(30, 10) # normal 1s, 0.5s
+NCARS = 100
+NPED = 30
+TIME_CARS = 0.5  
+TIME_PED = 5
+TIME_IN_BRIDGE_CARS = 1 
+TIME_IN_BRIDGE_PEDESTRIAN = 10
 
 class Monitor():
     def __init__(self):
         self.mutex = Lock()
-        self.patata = Value('i', 0) 
+        self.ncar_pedestrian = Value('i', 0) 
         self.ncar_south = Value('i', 0)
         self.ncar_north = Value ('i', 0)
         self.npedestrian = Value ('i', 0) 
-        self.ncar_waiting_south = Value ('i', 0) 
-        self.ncar_waiting_north = Value ('i', 0 ) 
-        #self.npedestrian_waiting = Value ('i',0)
+        self.ncar_waiting = Value ('i', 0) 
         self.no_cars_south = Condition (self.mutex) 
         self.no_cars_north = Condition (self.mutex)
         self.no_pedestrian = Condition (self.mutex)  
-        self.car_south_waiting = Condition (self.mutex)
-        self.car_north_waiting = Condition (self.mutex) 
-        self.max_car_south = Value('i', 0)
-        self.max_car_north = Value('i', 0)
-        self.max_pedestrian = Value('i',0)
+        self.car_waiting = Condition (self.mutex)
     
     def are_no_pedestrian(self): 
-        return self.npedestrian.value == 0 #and self.npedestrian_waiting.value == 0
+        return self.npedestrian.value == 0 
     
     def are_nobody_south(self): 
-        return  self.ncar_south.value == 0 #and  self.ncar_waiting_south.value == 0
+        return  self.ncar_south.value == 0 
     
     def are_nobody_north(self): 
-        return self.ncar_north.value == 0 #and  self.ncar_waiting_north.value == 0 
+        return self.ncar_north.value == 0 
     
-    def no_waiting_south(self): 
-        return self.ncar_waiting_south.value == 0 
-    
-    def no_waiting_north(self): 
-        return self.ncar_waiting_north.value == 0 
+    def max_waiting_car(self): 
+        return self.ncar_waiting.value < 15
     
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
-        self.patata.value += 1
+        self.ncar_pedestrian.value += 1
+        self.ncar_waiting.value += 1
+        self.no_pedestrian.wait_for(self.are_no_pedestrian)
         if direction == 1:  
-            self.ncar_waiting_south.value += 1
-            self.no_cars_north.wait_for(self.are_nobody_north) 
-            self.no_pedestrian.wait_for(self.are_no_pedestrian)
+            self.no_cars_north.wait_for(self.are_nobody_north)  
             self.ncar_south.value += 1
-           # self.ncar_waiting_south.value -= 1
-            self.max_car_south.value += 1 
-            if self.ncar_south == 0: 
-                self.car_south_waiting.notify_all()
         if direction == 0 :
-            self.ncar_waiting_north.value += 1
             self.no_cars_south.wait_for(self.are_nobody_south) 
-            self.no_pedestrian.wait_for(self.are_no_pedestrian)
             self.ncar_north.value += 1
-            #self.ncar_waiting_north.value -= 1
-            self.max_car_north.value += 1
-            if self.ncar_north == 0: 
-                self.car_north_waiting.notify_all()
+        self.ncar_waiting.value -= 1
+        self.car_waiting.notify_all()
         self.mutex.release()
 
     def leaves_car(self, direction: int) -> None:
         self.mutex.acquire() 
-        self.patata.value += 1
+        self.ncar_pedestrian.value += 1
         if direction == 1  :
-            self.ncar_waiting_south.value -= 1
             self.ncar_south.value -=1 
-            if self.max_car_south.value > 8 or self.ncar_waiting_south.value == 0 or self.npedestrian.value > 5 or self.ncar_waiting_north.value > 15:
+            if self.ncar_south.value == 0:
                 self.no_cars_south.notify_all() 
-                self.max_car_south.value = 0 
-        if direction ==  0: 
-            self.ncar_waiting_north.value -= 1
+        if direction ==  0:
             self.ncar_north.value -= 1 
-            if self.max_car_north.value > 8 or self.ncar_waiting_north.value == 0 or self.npedestrian.value > 3 or self.ncar_waiting_south.value > 15:
+            if self.ncar_north.value == 0:
                 self.no_cars_north.notify_all()
-                self.max_car_north.value = 0
         self.mutex.release()
 
     def wants_enter_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.patata.value += 1
-        self.car_south_waiting.wait_for (self.no_waiting_south)
-        self.car_north_waiting.wait_for(self.no_waiting_north)
+        self.ncar_pedestrian.value += 1
+        self.car_waiting.wait_for (self.max_waiting_car)
         self.no_cars_north.wait_for(self.are_nobody_north)
         self.no_cars_south.wait_for(self.are_nobody_south)
-        self.npedestrian.value += 1  
-        self.max_pedestrian.value += 1
+        self.npedestrian.value += 1
         self.mutex.release()
 
     def leaves_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.patata.value += 1 
+        self.ncar_pedestrian.value += 1 
         self.npedestrian.value -= 1 
-        if self.max_pedestrian.value > 3 or self.npedestrian.value == 0 or self.ncar_waiting_north.value > 15 or self.ncar_waiting_south.value > 15: 
+        if  self.npedestrian.value == 0: 
             self.no_pedestrian.notify_all()
-            self.max_pedestrian.value = 0 
         self.mutex.release()
 
     def __repr__(self) -> str:
-        return f'Monitor: {self.patata.value}'
+        return f'Monitor: {self.ncar_pedestrian.value}'
 
 def delay_car_north() -> None:
     time.sleep(TIME_IN_BRIDGE_CARS)
