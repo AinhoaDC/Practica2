@@ -27,7 +27,6 @@ TIME_IN_BRIDGE_PEDESTRIAN =(30,10)#normal 30s, 10s
 class Monitor():
     def __init__(self):
         self.mutex = Lock()
-        self.ncar_pedestrian = Value('i', 0) 
         self.ncar_south = Value('i', 0)
         self.ncar_north = Value ('i', 0)
         self.npedestrian = Value ('i', 0) 
