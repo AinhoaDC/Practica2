@@ -29,7 +29,6 @@ TIME_IN_BRIDGE_PEDESTRIAN = (30,10)
 class Monitor():
     def __init__(self):
         self.mutex = Lock()
-        self.ncar_pedestrian = Value('i', 0) 
         self.ncar_south = Value('i', 0)
         self.ncar_north = Value ('i', 0)
         self.npedestrian = Value ('i', 0) 
@@ -68,8 +67,7 @@ class Monitor():
         self.mutex.release()
 
     def leaves_car(self, direction: int) -> None:
-        self.mutex.acquire() 
-        self.ncar_pedestrian.value += 1
+        self.mutex.acquire()
         if direction == 1  :
             self.ncar_south.value -=1 
             if self.ncar_south.value == 0:
@@ -82,7 +80,6 @@ class Monitor():
 
     def wants_enter_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1
         self.car_waiting.wait_for (self.max_waiting_car)
         self.no_cars_north.wait_for(self.are_nobody_north)
         self.no_cars_south.wait_for(self.are_nobody_south)
@@ -91,7 +88,6 @@ class Monitor():
 
     def leaves_pedestrian(self) -> None:
         self.mutex.acquire()
-        self.ncar_pedestrian.value += 1 
         self.npedestrian.value -= 1 
         if  self.npedestrian.value == 0: 
             self.no_pedestrian.notify_all()
