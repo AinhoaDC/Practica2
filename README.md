@@ -23,3 +23,5 @@ límite para cada dirección y cuando en una de ellas hay muchos coches esperand
 tenemos peatones, pueden acumularse muchos coches en ambas direcciones y que se produzca un bloqueo. Para evitarlo, se le impone una condición extra a los coches que vienen 
 por el norte, los cuales deben dejar pasar a los del sur si ambos tienen una gran cantidad de coches esperando. Todo esto junto a lo del archivo anterior hace que en esta 
 opción se tenga en cuenta todas las posibles opciones (que hayan muchos coches o peatones esperando y que dentro de los coches hayan muchos en el sur o el norte). 
+
+- El archivo 'Practica_PRPA: Aquí se desarrolla la parte escrita de la práctica. Se desarrolla a mano el código de la solución básica escrito en pseudo código. Se escribe el invariante que debe cumplirse siempre para que funcione el programa. Se demuestra que el puente es seguro, que hay ausencia de deadblocks y que para una versión mejorada también tenemos ausencia de inanición. Todo esto se desarrolla de manera escrita, con palabras, intentando que quede lo más claro posible. 
