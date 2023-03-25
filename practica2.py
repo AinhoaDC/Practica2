@@ -46,13 +46,12 @@ class Monitor():
     
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
+        self.no_pedestrian.wait_for(self.are_no_pedestrian)
         if direction == 1:  
             self.no_cars_north.wait_for(self.are_nobody_north) 
-            self.no_pedestrian.wait_for(self.are_no_pedestrian)
             self.ncar_south.value += 1
         if direction == 0 :
             self.no_cars_south.wait_for(self.are_nobody_south) 
-            self.no_pedestrian.wait_for(self.are_no_pedestrian)
             self.ncar_north.value += 1
         self.mutex.release()
 
