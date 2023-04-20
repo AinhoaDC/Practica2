@@ -117,7 +117,6 @@ class Monitor():
         self.npedestrian.value += 1
         self.npedestrian_waiting.value -= 1
         self.pedestrian_waiting.notify_all()
-        
         self.mutex.release()
 
     def leaves_pedestrian(self) -> None:

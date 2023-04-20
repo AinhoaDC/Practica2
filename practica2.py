@@ -24,6 +24,7 @@ TIME_PED = 5
 TIME_IN_BRIDGE_CARS = (1,0.5) #normal 1s, 0.5s
 TIME_IN_BRIDGE_PEDESTRIAN =(30,10)#normal 30s, 10s
 
+#Creamos la clase del monitor donde vamos a solucionar el problema del puente. 
 class Monitor():
     def __init__(self):
         self.mutex = Lock()
@@ -33,28 +34,29 @@ class Monitor():
         self.no_cars_south = Condition (self.mutex) 
         self.no_cars_north = Condition (self.mutex)
         self.no_pedestrian = Condition (self.mutex) 
-    
+    #Las siguientes tres funciones se crean para poder utilizarla con variables de condición. En cada caso se tendrá que esperar hasta que se cumpla la indicada en cada momento:
     def are_no_pedestrian(self): 
-        return self.npedestrian.value == 0 
+        return self.npedestrian.value == 0 #Dice si quedan o no peatones. 
     
     def are_nobody_south(self):  
-        return  self.ncar_south.value == 0 
+        return  self.ncar_south.value == 0 #Indica si quedan o no coches de sur.
     
     def are_nobody_north(self):
-        return self.ncar_north.value == 0 
+        return self.ncar_north.value == 0 #Como las anteriores, te muestra si quedan o no coches del norte. 
  
-    
+    #La siguiente función es para cuando los coches quieren y entran al puente: 
     def wants_enter_car(self, direction: int) -> None:
         self.mutex.acquire()
-        self.no_pedestrian.wait_for(self.are_no_pedestrian)
+        self.no_pedestrian.wait_for(self.are_no_pedestrian) #Deben esperar a que no hayan peatones.
         if direction == 1:  
-            self.no_cars_north.wait_for(self.are_nobody_north) 
+            self.no_cars_north.wait_for(self.are_nobody_north) #Si el coche que quiere entrar viene del sur, debe esperar a que no haya coches del norte en el puente.
             self.ncar_south.value += 1
         if direction == 0 :
-            self.no_cars_south.wait_for(self.are_nobody_south) 
+            self.no_cars_south.wait_for(self.are_nobody_south) #Si el coche que quiere entrar viene del norte, debe esperar a que no haya coches del sur en el puente.
             self.ncar_north.value += 1
         self.mutex.release()
 
+    #La siguiente función te indica cuando un coche ha cruzado el puente:
     def leaves_car(self, direction: int) -> None:
         self.mutex.acquire() 
         if direction == 1  : 
@@ -67,17 +69,20 @@ class Monitor():
                 self.no_cars_north.notify_all()
         self.mutex.release()
 
+    #Función para cuando los peatones quieren cruzar el puente:
     def wants_enter_pedestrian(self) -> None:
-        self.mutex.acquire()
+        self.mutex.acquire() 
+        #Los peatones esperan a que no hayan coches del sur y del norte cruzando el puente. 
         self.no_cars_north.wait_for(self.are_nobody_north)
         self.no_cars_south.wait_for(self.are_nobody_south)
         self.npedestrian.value += 1 
         self.mutex.release()
 
+    #Función para cuando los peatones han cruzado el puente: 
     def leaves_pedestrian(self) -> None:
         self.mutex.acquire()
         self.npedestrian.value -= 1 
-        if self.npedestrian.value == 0 : 
+        if self.npedestrian.value == 0 : #Se espera a que crucen todos los peatones para notificar a los coches de que pueden cruzar. 
             self.no_pedestrian.notify_all() 
         self.mutex.release()
 
