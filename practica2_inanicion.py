@@ -49,7 +49,7 @@ class Monitor():
     def are_nobody_north(self): 
         return self.ncar_north.value == 0 #Como las anteriores, te muestra si quedan o no coches del norte.
     
-    #Usaremos la siguiente función para usarlo de condición como máximo de coches esperando. Con esto tratamos la inanición, evitamos que nunca entren los coches. 
+    #Usaremos la siguiente función para usarlo de condición como máximo de coches esperando. Con esto tratamos la inanición, evitamos que nunca no entren los coches. 
     def max_waiting_car(self): 
         return self.ncar_waiting.value < 15
     
